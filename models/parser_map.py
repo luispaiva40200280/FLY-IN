@@ -1,8 +1,8 @@
-# import re
+import re
 from typing import List
 from network import Map
 from data import Connection
-import os
+import sys
 
 
 class ParserMap:
@@ -11,16 +11,13 @@ class ParserMap:
         self.current_line_number = 1
         self.map: Map = Map()
 
-    @staticmethod
-    def _parse_nbr_drones(line: str) -> int:
+    def _parse_nbr_drones(self, line: str) -> None:
         nbr_drones = line.split(':', 1)
-        nbr = int(nbr_drones[1])
-        return nbr
+        self.map.nbr_drones = int(nbr_drones[1])
 
     @staticmethod
-    def _parser_hubs() -> dict[frozenset[str], Connection]:
-        connections: dict[frozenset[str], Connection] = {}
-        return connections
+    def _parser_hubs(line: str) -> None:
+        pass
 
     @staticmethod
     def _parse_connections() -> List[dict[str, Connection]]:
@@ -35,9 +32,16 @@ class ParserMap:
         3. Strip whitespace and ignore comments
         4. Pass the line to the correct helper method
         """
-        with open(self.filepath) as file:
-            for line in file:
-                if line.startswith("#"):
-                    continue
-
+        try:
+            with open(self.filepath) as file:
+                for nbr, line in enumerate(file):
+                    if line.startswith("#"):
+                        continue
+                    if line.startswith('nb_drones'):
+                        self._parse_nbr_drones(line)
+                    is_hub = re.search("hub", line)
+                    if is_hub:
+                        self._parser_hubs(line)
+        except ValueError:
+            sys.exit(0)
         return self.map
