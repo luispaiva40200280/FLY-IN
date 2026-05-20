@@ -4,9 +4,9 @@ from typing import Optional
 
 class Map:
     def __init__(self) -> None:
-        self.nbr_drones: int
+        self.nbr_drones: int = 0
         self.zones: dict[str, Zone] = {}
-        self.conections: dict[frozenset[str], Connection] = {}
+        self.connections: dict[frozenset[str], Connection] = {}
         # all conections that every zone have
         self.list_adjacents: dict[str, list[str]] = {}
         self.start_hub: Optional[str] = None
@@ -20,4 +20,4 @@ class Map:
         zone_a_name, zone_b_name = connection.zones
         self.list_adjacents[zone_a_name].append(zone_b_name)
         self.list_adjacents[zone_b_name].append(zone_a_name)
-        self.conections[connection.zones] = connection
+        self.connections[connection.zones] = connection
