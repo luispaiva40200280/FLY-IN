@@ -1,12 +1,6 @@
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Optional
-
-
-class DroneState(Enum):
-    WAITING = 'waiting'
-    IN_TRANSIT = 'in_transit'
-    ARRIVED = 'arrived'
+from constants import DroneState, ZoneType
 
 
 @dataclass
@@ -16,21 +10,14 @@ class Drone:
     state: DroneState = field(default=DroneState.WAITING)
 
 
-class ZoneType(Enum):
-    NORMAL = 'normal'
-    BLOCKED = 'blocked'
-    RESTRICTED = 'restricted'
-    PRIORITY = 'priority'
-
-
 @dataclass
 class Zone:
     name: str
     x: int
     y: int
     max_drones: int = field(default=1)
-    zone_type: ZoneType = field(default=ZoneType.NORMAL)
-    zone_color: Optional[str] = field(default=None)
+    zone: ZoneType = field(default=ZoneType.NORMAL)
+    color: Optional[str] = field(default=None)
 
 
 @dataclass
