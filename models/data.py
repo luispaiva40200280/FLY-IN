@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional
-from constants import DroneState, ZoneType
+from .constants import DroneState, ZoneType, Coolors
 
 
 @dataclass
@@ -17,7 +17,7 @@ class Zone:
     y: int
     max_drones: int = field(default=1)
     zone: ZoneType = field(default=ZoneType.NORMAL)
-    color: Optional[str] = field(default=None)
+    color: Optional[Coolors] = field(default=Coolors.GREEN)
 
 
 @dataclass

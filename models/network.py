@@ -1,10 +1,10 @@
-from data import Zone, Connection
 from typing import Optional
+from .data import Zone, Connection
 
 
 class Map:
     def __init__(self) -> None:
-        self.nbr_drones: int = 0
+        self.nbr_drones: int = 1
         self.zones: dict[str, Zone] = {}
         self.connections: dict[frozenset[str], Connection] = {}
         # all conections that every zone have

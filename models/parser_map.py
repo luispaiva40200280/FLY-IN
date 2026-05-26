@@ -1,8 +1,9 @@
 import re
-from typing import Any
-from network import Map
-from data import Connection, Zone, ZoneType
 import sys
+from typing import Any
+from .constants import Coolors
+from .network import Map
+from .data import Connection, Zone, ZoneType
 
 
 class MapError(Exception):
@@ -38,10 +39,8 @@ class ParserMap:
                     metadata[key] = int(value)
                 else:
                     metadata[key] = value
-                """
-                if key == Color:
-                    metadata[key] = Coolors[value]
-                """
+                if key == 'color':
+                    metadata[key] = Coolors.get_color(value)
         return metadata
 
     def _parser_hubs(self, line: str) -> 'Zone':
@@ -111,10 +110,10 @@ class ParserMap:
             # Checking the all map !!
             self._check_map_complete()
         except ValueError as e:
-            print(f"\033[38;2;255;0;0m Error on {nbr} invalid value: {e}",
+            print(f"{Coolors.RED} Error on {nbr} invalid value: {e}",
                   file=sys.stderr)
             sys.exit(1)
         except MapError as e:
-            print(f"\033[38;2;255;0;0m [Error] :{e}")
+            print(f"{Coolors.RED} Error: {e}")
             sys.exit(1)
         return self.map
