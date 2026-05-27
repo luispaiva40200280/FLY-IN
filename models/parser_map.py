@@ -44,7 +44,7 @@ class ParserMap:
                         metadata[key] = Coolors[value.upper()]
                     except KeyError:
                         metadata[key] = Coolors["CYEN"]
-                        
+
         return metadata
 
     def _parser_hubs(self, line: str) -> 'Zone':
