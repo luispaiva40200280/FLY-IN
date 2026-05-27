@@ -40,7 +40,7 @@ class ParserMap:
                 else:
                     metadata[key] = value
                 if key == 'color':
-                    metadata[key] = Coolors.get_color(value)
+                    metadata[key] = Coolors[value.upper()]
         return metadata
 
     def _parser_hubs(self, line: str) -> 'Zone':
