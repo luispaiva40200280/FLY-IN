@@ -63,3 +63,127 @@ It becomes a "ghost" to the ATC during Phase 1 and Phase 2.
     
 
 By separating the math into these three strict phases—erasing departures, validating arrivals against the draft, and committing the final reality—the engine flawlessly handles complex traffic jams without allowing drones to mathematically crash into each other.
+
+## Pseudo Code 
+
+```python
+class StateEngine:
+    function __init__(map):
+        self.map = map
+        self.drones = map.drones
+        self.future_reservations = empty_dictionary() 
+        self.turn_counter = 0
+
+    function execute_turn(proposed_moves):
+        """
+        proposed_moves: A dictionary mapping {Drone: TargetZone} for this turn.
+        If a drone is waiting, TargetZone == drone.current_zone.
+        """
+        self.turn_counter += 1
+        
+        # --- INITIALIZE DOUBLE BUFFERS ---
+        # next_occupancy will track the net changes for the new turn
+        next_occupancy = copy(self.map.current_zone_occupancy)
+        current_connection_usage = initialize_empty_edge_counters()
+        
+        validated_moves = []
+        turn_output = []
+
+        # =========================================================
+        # PHASE 1: THE DEPARTURE (Freeing Capacity)
+        # =========================================================
+        for drone in self.drones:
+            # Drones currently mid-flight (restricted transit) already left their
+            # zone last turn, so they don't free up capacity today.
+            if drone.state == IN_TRANSIT:
+                continue 
+
+            target = proposed_moves[drone]
+            
+            # If the drone is moving to a NEW zone, free its current space immediately
+            if target != drone.current_zone:
+                next_occupancy[drone.current_zone] -= 1
+
+
+        # =========================================================
+        # PHASE 2: THE VALIDATION (Enforcing Physics)
+        # =========================================================
+        for drone in self.drones:
+            
+            # SCENARIO A: Drone is mid-flight. FSM forces it to arrive.
+            if drone.state == IN_TRANSIT:
+                drone.transit_timer -= 1
+                if drone.transit_timer == 0:
+                    next_occupancy[drone.destination] += 1
+                    validated_moves.append((drone, drone.destination, ARRIVED))
+                continue
+
+            target = proposed_moves[drone]
+
+            # SCENARIO B: Drone is intentionally waiting in place.
+            if target == drone.current_zone:
+                # We didn't subtract it in Phase 1, so we don't add it here.
+                continue 
+
+            # Fetch the connection (edge) the drone wants to use
+            connection = self.map.get_connection(drone.current_zone, target)
+
+            # SCENARIO C: Drone wants to move. Validate Connection Capacity.
+            if current_connection_usage[connection] + 1 > connection.max_link_capacity:
+                RAISE SimulationError(f"Collision: {connection.name} capacity exceeded")
+
+            # SCENARIO D: Validate Destination Zone Capacity
+            if target.type == RESTRICTED:
+                # Restricted validation: Check future capacity (Turn + 1)
+                target_turn = self.turn_counter + 1
+                future_count = self.future_reservations.get((target, target_turn), 0)
+                
+                if future_count + 1 > target.max_drones:
+                    RAISE SimulationError(f"Deadlock: {target.name} will be full on arrival")
+                
+                # Lock in the reservation and mark edge usage
+                self.future_reservations[(target, target_turn)] = future_count + 1
+                current_connection_usage[connection] += 1
+                
+                validated_moves.append((drone, connection, IN_TRANSIT))
+                
+            else:
+                # Normal/Priority validation: Check immediate next_occupancy capacity
+                if next_occupancy[target] + 1 > target.max_drones:
+                    RAISE SimulationError(f"Capacity Overflow: {target.name} is full")
+                
+                # Mark edge usage and update zone capacity
+                current_connection_usage[connection] += 1
+                next_occupancy[target] += 1
+                
+                validated_moves.append((drone, target, ARRIVED))
+
+
+        # =========================================================
+        # PHASE 3: THE COMMIT (State Update & Output formatting)
+        # =========================================================
+        # If we reached this point without raising errors, the turn is 100% legal.
+        
+        self.map.current_zone_occupancy = next_occupancy
+
+        for (drone, target_object, new_state) in validated_moves:
+            
+            if new_state == IN_TRANSIT:
+                drone.state = IN_TRANSIT
+                drone.current_zone = None
+                drone.transit_timer = 1
+                drone.destination = proposed_moves[drone] # Save where it's going
+                # Format: D1-connection_name
+                turn_output.append(f"D{drone.id}-{target_object.name}")
+                
+            elif new_state == ARRIVED:
+                drone.state = ARRIVED
+                drone.current_zone = target_object
+                drone.destination = None
+                # Format: D1-zone_name
+                turn_output.append(f"D{drone.id}-{target_object.name}")
+
+        # Print the space-separated output for this turn
+        if turn_output is not empty:
+            print(" ".join(turn_output))
+```
