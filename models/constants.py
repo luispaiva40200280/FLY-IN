@@ -43,7 +43,7 @@ class Coolors(Enum):
     MAGENTA = '\033[38;5;201m'    # Bright Pink/Magenta
     VIOLET = '\033[38;5;128m'     # Light Purple
     CRIMSON = '\033[38;5;197m'    # Deep Pinkish-Red
-    RAINBOW = '\033[38;5;51m'     # Placeholder (See analysis below)
+    RAINBOW = '\033[38;5;51m'
 
     @classmethod
     def get_color(cls, color_name: Optional[str]) -> str:

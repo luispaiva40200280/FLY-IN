@@ -40,7 +40,11 @@ class ParserMap:
                 else:
                     metadata[key] = value
                 if key == 'color':
-                    metadata[key] = Coolors[value.upper()]
+                    try:
+                        metadata[key] = Coolors[value.upper()]
+                    except KeyError:
+                        metadata[key] = Coolors["CYEN"]
+                        
         return metadata
 
     def _parser_hubs(self, line: str) -> 'Zone':
@@ -114,6 +118,9 @@ class ParserMap:
                   file=sys.stderr)
             sys.exit(1)
         except MapError as e:
+            print(f"{Coolors.RED} Error: {e}")
+            sys.exit(1)
+        except (FileExistsError, FileNotFoundError) as e:
             print(f"{Coolors.RED} Error: {e}")
             sys.exit(1)
         return self.map

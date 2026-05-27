@@ -4,3 +4,21 @@
 FlyIn/
 
 test.py
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+__pypackages__/
+
+# Environments
+env/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# .vscode/
+
+.obsidian/
+
+maze.txt/
+config.txt/
