@@ -72,3 +72,25 @@ class NetworkView(arc.View):
 
         for zone in self.map.zones.values():
             self._draw_zones(zone)
+
+
+"""
+if __name__ == "__main__":
+    import sys
+    from models.parser_map import ParserMap
+    SCREEN_WIDTH = 1600
+    SCREEN_HEIGHT = 600
+    SCREEN_TITLE = "Graph Rendering Test"
+    file = sys.argv[1]
+
+    map_network = ParserMap().parser_map(filepath=file)
+    window = arc.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    # Instantiate the test view
+    test_view = NetworkView(network=map_network)
+
+    # Tell the window to display this specific view
+    window.show_view(test_view)
+
+    # Start the 60FPS event loop
+    arc.run()
+"""

@@ -3,14 +3,14 @@ from typing import Optional
 from .constants import DroneState, ZoneType, Coolors
 
 
-@dataclass
+@dataclass(frozen=True)
 class Drone:
     name: str
     current_zone: str
     state: DroneState = field(default=DroneState.WAITING)
 
 
-@dataclass
+@dataclass(frozen=True)
 class Zone:
     name: str
     x: int
@@ -20,7 +20,7 @@ class Zone:
     color: Optional[Coolors] = field(default=Coolors.GREEN)
 
 
-@dataclass
+@dataclass(frozen=True)
 class Connection:
     zones: frozenset[str]
     max_link_capacity: int = 1
