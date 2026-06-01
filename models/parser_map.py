@@ -3,7 +3,7 @@ import sys
 from typing import Any
 from .constants import Coolors
 from .network import Map
-from .data import Connection, Zone, ZoneType
+from .data import Connection, Zone, ZoneType, Drone, DroneState
 
 
 class MapError(Exception):
@@ -89,6 +89,20 @@ class ParserMap:
             raise MapError("Map needs to have ending point")
         pass
 
+    def _initialize_drones(self) -> None:
+        """
+        Creates the required number of Drone objects and places them
+        at the starting hub.
+        """
+
+        for i in range(1, self.map.nbr_drones + 1):
+            new_drone = Drone(
+                name=f"D{i}",
+                current_zone=self.map.start_hub or "start",
+                state=DroneState.WAITING
+            )
+            self.map.drones.append(new_drone)
+
     def parser_map(self, filepath: str) -> Map:
         """
         1. Open file using 'with open(self.filepath, "r") as f:'
@@ -113,6 +127,7 @@ class ParserMap:
                         self._parse_connections(line)
             # Checking the all map !!
             self._check_map_complete()
+            self._initialize_drones()
         except ValueError as e:
             print(f"{Coolors.RED} Error on {nbr} invalid value: {e}",
                   file=sys.stderr)

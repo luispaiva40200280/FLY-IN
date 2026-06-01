@@ -1,4 +1,3 @@
-from models.data import Zone  # , Connection, Drone
 from models.network import Map
 from models.constants import DroneState
 
@@ -6,10 +5,10 @@ from models.constants import DroneState
 class StateEngine:
     def __init__(self, map: Map) -> None:
         self.map = map
-        self.future_reservations: dict[Zone, tuple[str, int]] = {}
+        self.future_reservations: dict[tuple[str, int], int] = {}
         self.turn_counter: int = 0
 
-    def execute_turn(self, moves: dict[str, Zone]) -> None:
+    def execute_turn(self, moves: dict[str, str]) -> None:
         """
         proposed_moves:
         A dictionary mapping {Drone: TargetZone} for this turn.
@@ -19,7 +18,8 @@ class StateEngine:
         self.turn_counter += 1
         # this is for checking the state of the map in every turn
         # and see the zones that have and how may drones are in there
-        nodes_occupency: dict[str, int] = {zone.name: 0 for zone in self.map.zones.values()}
+        nodes_occupency: dict[str, int] = {zone.name: 0
+                                           for zone in self.map.zones.values()}
         for drone in self.map.drones:
             if drone.state in (DroneState.ARRIVED, DroneState.WAITING):
                 nodes_occupency[drone.current_zone] += 1
@@ -44,4 +44,14 @@ class StateEngine:
         turn_output: deque = deque()
 
         for drone in self.map.drones:
-            pass
+            if drone.state == DroneState.IN_TRANSIT:
+                drone.transit_timer -= 1
+                if drone.transit_timer == 0:
+                    nodes_occupency[drone.current_zone] += 1
+                    valid_moves.append((drone, drone.destination,
+                                        DroneState.ARRIVED))
+                continue
+            target = moves.get(drone.name, drone.current_zone)
+            if target == drone.current_zone:
+                continue
+            
