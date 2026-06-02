@@ -22,3 +22,5 @@ dmypy.json
 
 maze.txt/
 config.txt/
+
+maps/
