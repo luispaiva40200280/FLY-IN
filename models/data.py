@@ -3,6 +3,7 @@ from typing import Optional
 from .constants import DroneState, ZoneType, Coolors
 
 
+@dataclass
 class Drone:
     name: str
     current_zone: str
@@ -11,7 +12,7 @@ class Drone:
     destination: Optional[str] = field(default=None)
 
 
-@dataclass(frozen=True)
+@dataclass
 class Zone:
     name: str
     x: int

@@ -87,7 +87,8 @@ class ParserMap:
             raise MapError("Map needs to have an starting point")
         if self.map.end_hub is None:
             raise MapError("Map needs to have ending point")
-        pass
+        self.map.zones[self.map.start_hub].max_drones = self.map.nbr_drones
+        self.map.zones[self.map.end_hub].max_drones = self.map.nbr_drones
 
     def _initialize_drones(self) -> None:
         """
