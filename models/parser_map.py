@@ -95,7 +95,6 @@ class ParserMap:
         Creates the required number of Drone objects and places them
         at the starting hub.
         """
-
         for i in range(1, self.map.nbr_drones + 1):
             new_drone = Drone(
                 name=f"D{i}",

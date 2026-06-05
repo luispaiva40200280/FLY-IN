@@ -2,6 +2,10 @@ from models.network import Map
 from models.constants import DroneState, ZoneType
 from models.parser_map import ParserMap
 import sys
+"""
+State engine needs clean up and code division
+and docstrings explaining what each part does
+"""
 
 
 class SimulationError(Exception):
