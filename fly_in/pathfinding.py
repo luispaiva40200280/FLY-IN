@@ -7,12 +7,19 @@ from collections import deque
 import heapq
 
 
+class AlgError(Exception):
+    """
+    Custom error for pathfinding algorithm
+    """
+    pass
+
+
 class Navigator:
     def __init__(self, network: Map) -> None:
         self.map = network
         # The Pathfinder's version of the engine's physics board
         # Key: (Zone Name, Turn Integer) -> Value: Drones occupying it
-        self.global_reservations: dict[tuple[str, int], int] = {}
+        self.reservations: dict[tuple[str, int], int] = {}
 
         # The final output: { "D1": ["start", "waypoint1", "goal", "goal"] }
         self.master_schedule: dict[str, list[str]] = {}
@@ -51,10 +58,28 @@ class Navigator:
             neighbors = (self.map.list_adjacents.get(current_zone, []) +
                          [current_zone])
 
-            for zone in neighbors:
-                arrival_time = self.map.
+            for zone_name in neighbors:
+                zone_to_go = self.map.zones.get(zone_name)
+                if not zone_to_go:
+                    raise MapError(f"{zone_name} does not exsit in  the map")
                 # IMPLEMENT: Calculate arrival_time (+1 or +2)
+                if zone_to_go.zone == ZoneType.BLOCKED:
+                    continue
+                elif zone_name == current_zone:
+                    arrival_time = current_time + 1
+                elif zone_to_go.zone in (ZoneType.NORMAL, ZoneType.PRIORITY):
+                    arrival_time = current_time + 1
+                else:
+                    arrival_time = current_time + 2
+
                 # IMPLEMENT: Check self.global_reservations for Node Capacity
+                nbr_drones = self.reservations.get((zone_name, arrival_time),
+                                                   0)
+                fnbr_drones = self.reservations.get((zone_name, arrival_time),
+                                                    0)
+                if (nbr_drones > zone_to_go.max_drones or
+                        fnbr_drones > zone_to_go.max_drones):
+                    continue
                 # IMPLEMENT: Check self.global_reservations for Edge Swaps
                 # IMPLEMENT: Calculate f_score using _get_ideal_cost
                 # IMPLEMENT: Update came_from, g_score, and push to open_set
