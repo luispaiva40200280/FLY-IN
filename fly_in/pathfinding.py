@@ -2,7 +2,6 @@ from models.parser_map import MapError
 from models.network import Map
 from models.data import Drone
 from models.constants import ZoneType
-# from .state_engine import StateEngine
 from collections import deque
 import heapq
 
@@ -18,75 +17,97 @@ class Navigator:
     def __init__(self, network: Map) -> None:
         self.map = network
         # The Pathfinder's version of the engine's physics board
-        # Key: (Zone Name, Turn Integer) -> Value: Drones occupying it
         self.reservations: dict[tuple[str, int], int] = {}
+        # Key: (Zone Name, Turn Integer) -> Value: Drones occupying it
         self.edge_reservations: dict[tuple[frozenset[str], int], int] = {}
-        # The final output: { "D1": ["start", "waypoint1", "goal", "goal"] }
         self.master_schedule: dict[str, list[str]] = {}
 
-    """
     def solve(self) -> dict[str, list[str]]:
+        """
         The main orchestration method.
-        Executes Phase 1, Phase 2, and Phase 3 sequentially.
-        # 1. Get sorted list of drones
-        priority_queue: deque = self._calculate_priorities()
-        # 2. Route them one by one
+
+        Calculates the the prioity for each drone and calls
+        the space time star (A* algorithm) for each drone in that order
+        and then regiters the path of de drone in the reservations with the
+        turn and name of zone that the drone will acupate.
+        Returns:
+            -> Dictionary:  "name of the drone": list["hubs/zones names"]
+                ex: { "D1": ["start", "waypoint1", "goal", "goal"] }
+        """
+        priority_queue = self._calculate_priorities()
+
         for drone in priority_queue:
             path = self._space_time_a_star(drone)
             if not path:
-                raise ValueError(f"Deadlock: No valid path for {drone.name}")
-            # 3. Lock it in
+                raise AlgError(f"Deadlock: No valid path for {drone.name}")
             self._register_path(drone, path)
-
         return self.master_schedule
-    """
+
+    def _register_path(self, drone: Drone, path: list[str]) -> None:
+        """
+        Saves the calculated path and writes the capacity data
+        into the collision calendars.
+
+        Iterates chronologically through the drone's timeline.
+        Secures the physical node capacity for every individual turn,
+        and reserves the edge capacity strictly on the turns where the
+        drone initiates a physical transition between two different zones.
+        Args:
+            drone (Drone): The drone object being routed.
+            path (list[str]): The chronological list of
+                                zone names the drone will occupy.
+        """
+        self.master_schedule[drone.name] = path
+        for turn in range(len(path)):
+            curr_node = path[turn]
+            nbr_drones_turn = self.reservations.get((curr_node, turn), 0) + 1
+            # 1. Update Node Capacity Calendar
+            self.reservations[(curr_node, turn)] = nbr_drones_turn
+            # 2. Update Edge Capacity Calendar (Only if moving)
+            if turn > 0:
+                prev_zone = path[turn - 1]
+                if curr_node != prev_zone:
+                    conn = frozenset([prev_zone, curr_node])
+                    # The state engine checks connections on the
+                    # exact turn the move initiates
+                    conn_turn = self.edge_reservations.get((conn, turn), 0) + 1
+                    self.edge_reservations[(conn, turn)] = conn_turn
+
     def _reconstruct_path(self, came_from: dict[tuple[str,  int],
                                                 tuple[str, int]],
-                          goal: tuple[str, int]):
+                          goal: tuple[str, int]) -> list[str]:
         """
         Traces the came_from dictionary backward from the goal to the start.
-        Handles the 2-turn gap created by RESTRICTED zones.
+        Handles the 2-turn gap created by RESTRICTED zones to generate an
+        unbroken chronological timeline.
+
+        Args:
+            came_from (dict): A mapping of a state to its immediate
+            predecessor.
+                    Format: (curr_zone, curr_turn): (prev_zone, prev_turn)
+            goal (tuple): The final 3D state reached by the algorithm.
+                        Format: (goal_zone, arrival_turn)
+
+        Returns:
+            list[str]: A turn-by-turn chronological schedule of the zones the
+                    drone will occupy from Turn 0 to the final turn.
         """
-        # 1. Initialize the tracker and the output list
         current_state = goal
         path_timeline: list[str] = []
-
-        # 2. The Natural Break Condition
-        # The start node at Turn 0 is NEVER recorded as a key in came_from.
-        # When current_state reaches ("start", 0), this loop automatically terminates.
-        while current_state in came_from:
-            # Look one step backward in time
+        while current_state[1] > 0:
             prev_state = came_from[current_state]
-            
-            # Extract the data
             current_zone = current_state[0]
             current_time = current_state[1]
             prev_time = prev_state[1]
-
-            # 3. Log the current step
             path_timeline.append(current_zone)
-
-            # 4. The Physics Gap Catch
-            # If the time difference is 2, it was a restricted zone.
-            # We must duplicate the zone name to fill the chronological turn.
             if current_time - prev_time == 2:
                 path_timeline.append(current_zone)
-
-            # 5. Step backwards
             current_state = prev_state
-
-        # 6. Finalize the Timeline
-        # The loop broke before adding the Turn 0 starting zone, so we add it 
-        # manually.
         start_zone = current_state[0]
         path_timeline.append(start_zone)
-        
-        # The list is currently [Goal, Waypoint, Start]. Reverse it.
-        path_timeline.reverse()
-        
-        return path_timeline
+        return path_timeline[::-1]
 
-    def _space_time_a_star(self, drone: Drone):  # -> list[tuple[str, int]]:
+    def _space_time_a_star(self, drone: Drone) -> list[str]:
         if not self.map.end_hub:
             raise AlgError("No end hub on the map")
         open_set: list[tuple[int, int, str]] = [(0, 0, drone.current_zone)]
@@ -170,7 +191,7 @@ class Navigator:
                 continue
             visited.add(zone_name)
             if zone_name == end_zone:
-                return time_cost
+                return int(time_cost)
             neighbors_zones = self.map.list_adjacents.get(zone_name, [])
             for neighbor in neighbors_zones:
                 node = self.map.zones.get(neighbor)
