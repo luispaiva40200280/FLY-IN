@@ -43,6 +43,19 @@ def main():
 
     try:
         # Loop through chronological time steps
+        print("\n>>> LAUNCHING VISUALIZER <<<")
+        import arcade as arc
+        from view.view_engine import NetworkView
+
+        # Initialize the window
+        window = arc.Window(2100, 800, "Fly-In Drone Swarm Simulation")
+
+        # Instantiate the view, passing BOTH the map and the calculated schedule
+        animation_view = NetworkView(network=network, schedule=master_schedule)
+        window.show_view(animation_view)
+
+        # Start the engine
+        arc.run()
         # Start at Turn 1, because index 0 is their starting position
         for turn in range(1, max_turns):
             print(f"\n--- TURN {turn} ---")
@@ -57,7 +70,7 @@ def main():
                 moves_this_turn[drone_name] = target
             # Feed the slice of time to the engine
             engine.execute_turn(moves_this_turn)
-            #time.sleep(1)
+            # time.sleep(1)
         print(f"TURNS => {turn}/{max_turns}")
     except SimulationError as e:
         print(f"\n[CRASH] The physics engine detected an illegal move: {e}")
@@ -66,18 +79,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-"""
-    print("\n>>> LAUNCHING VISUALIZER <<<")
-    import arcade as arc
-    from view.view_engine import NetworkView
-
-    # Initialize the window
-    window = arc.Window(2100, 800, "Fly-In Drone Swarm Simulation")
-
-    # Instantiate the view, passing BOTH the map and the calculated schedule
-    animation_view = NetworkView(network=network, schedule=master_schedule)
-    window.show_view(animation_view)
-
-    # Start the engine
-    arc.run()
-"""

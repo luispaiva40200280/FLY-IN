@@ -1,11 +1,9 @@
-from models.network import Map
-from models.constants import DroneState, ZoneType
-from models.parser_map import ParserMap
-import sys
 """
 State engine needs clean up and code division
 and docstrings explaining what each part does
 """
+from models.network import Map
+from models.constants import DroneState, ZoneType
 
 
 class SimulationError(Exception):
@@ -109,26 +107,30 @@ at turn {turn}")
         # =========================================================
         # PHASE 3: THE COMMIT (State Update & Output formatting)
         # =========================================================
-
         for drone, destination, state in valid_moves:
             if state == DroneState.ARRIVED:
                 drone.current_zone = destination
                 drone.destination = None
                 drone.transit_timer = 0
                 drone.state = DroneState.ARRIVED
-                turn_output.append(f"{drone.name}-{destination}")
+                turn_output.append(f"{drone.name}: {drone.current_zone}\
+{current_connection }-{destination}")
 
             if state == DroneState.IN_TRANSIT:
                 drone.transit_timer = 1
                 drone.state = DroneState.IN_TRANSIT
                 drone.current_zone = None
                 drone.destination = destination
-                turn_output.append(f"{drone.name}-{destination}")
+                turn_output.append(f"{drone.name}: {drone.current_zone}\
+{connection}-{destination}")
 
         if turn_output:
             print("\n".join(turn_output))
 
 
+"""
+import sys
+from models.parser_map import ParserMap
 def run_simulation_test() -> None:
     print(">>> INITIALIZING MAP <<<")
     if len(sys.argv) < 2:
@@ -180,3 +182,5 @@ at {drone.current_zone}")
 
 if __name__ == "__main__":
     run_simulation_test()
+
+"""

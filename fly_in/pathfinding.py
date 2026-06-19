@@ -108,8 +108,16 @@ class Navigator:
         return path_timeline[::-1]
 
     def _space_time_a_star(self, drone: Drone) -> list[str]:
+        """
+        Space time_a_star algorithm logic implementation
+        Args:
+            Drone: drone object to implement the patfinder logic
+        Return:
+           list[str]: list[str]
+        """
         if not self.map.end_hub:
             raise AlgError("No end hub on the map")
+
         open_set: list[tuple[int, int, str]] = [(0, 0, drone.current_zone)]
         came_from: dict[tuple[str,  int], tuple[str, int]] = {}
         score: dict[tuple[str, int], int] = {(drone.current_zone, 0): 0}
@@ -183,6 +191,10 @@ class Navigator:
         return queue
 
     def _get_ideal_cost(self, current_zone: str, end_zone: str) -> int:
+        """
+        params:
+        return:
+        """
         priority_queue: list = [(0, current_zone)]
         visited: set[str] = set()
         while priority_queue:
