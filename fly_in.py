@@ -42,21 +42,6 @@ def main():
     # ... inside fly_in.py main() after Phase 3 ...
 
     try:
-        # Loop through chronological time steps
-        print("\n>>> LAUNCHING VISUALIZER <<<")
-        import arcade as arc
-        from view.view_engine import NetworkView
-
-        # Initialize the window
-        window = arc.Window(2100, 800, "Fly-In Drone Swarm Simulation")
-
-        # Instantiate the view, passing BOTH the map and the calculated schedule
-        animation_view = NetworkView(network=network, schedule=master_schedule)
-        window.show_view(animation_view)
-
-        # Start the engine
-        arc.run()
-        # Start at Turn 1, because index 0 is their starting position
         for turn in range(1, max_turns):
             print(f"\n--- TURN {turn} ---")
             # Build the dictionary mapping {"D1": "waypoint1", "D2": "start"}
@@ -78,4 +63,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

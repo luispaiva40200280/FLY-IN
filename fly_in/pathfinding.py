@@ -15,10 +15,39 @@ class AlgError(Exception):
 
 class Navigator:
     def __init__(self, network: Map) -> None:
+        """
+        Initializes the pathfinding engine with the static map topology
+        and the dynamic chronological collision calendars.
+
+        Args:
+            network (Map): The parsed graph containing all zones,
+                connections, and drones.
+
+        Attributes:
+            map (Map): Stores the static topological data of the
+                network to be navigated.
+
+            reservations (dict[tuple[str, int], int]):
+                The 3D Node Capacity Calendar.
+                Key: A tuple of (Zone Name, Chronological Turn).
+                Value: The integer count of drones scheduled to occupy
+                    that zone at that turn.
+
+            edge_reservations (dict[tuple[frozenset[str], int], int]):
+                The 3D Edge Capacity Calendar.
+                Key: A tuple containing a frozenset of two connecting zones,
+                    and the Chronological Turn the transition initiates.
+                Value: The integer count of drones actively crossing that
+                    specific edge.
+
+            master_schedule (dict[str, list[str]]):
+                The final output ledger.
+                Key: The drone's string identifier (e.g., "D1").
+                Value: The chronological, turn-by-turn list of zones the
+                    drone will traverse.
+        """
         self.map = network
-        # The Pathfinder's version of the engine's physics board
-        self.reservations: dict[tuple[str, int], int] = {}
-        # Key: (Zone Name, Turn Integer) -> Value: Drones occupying it
+        self.zone_reservations: dict[tuple[str, int], int] = {}
         self.edge_reservations: dict[tuple[frozenset[str], int], int] = {}
         self.master_schedule: dict[str, list[str]] = {}
 
@@ -31,7 +60,7 @@ class Navigator:
         and then regiters the path of de drone in the reservations with the
         turn and name of zone that the drone will acupate.
         Returns:
-            -> Dictionary:  "name of the drone": list["hubs/zones names"]
+            Dictionary:  "name of the drone": list["hubs/zones names"]
                 ex: { "D1": ["start", "waypoint1", "goal", "goal"] }
         """
         priority_queue = self._calculate_priorities()
@@ -52,17 +81,20 @@ class Navigator:
         Secures the physical node capacity for every individual turn,
         and reserves the edge capacity strictly on the turns where the
         drone initiates a physical transition between two different zones.
+
         Args:
             drone (Drone): The drone object being routed.
+
             path (list[str]): The chronological list of
-                                zone names the drone will occupy.
+                zone names the drone will occupy.
         """
         self.master_schedule[drone.name] = path
         for turn in range(len(path)):
             curr_node = path[turn]
-            nbr_drones_turn = self.reservations.get((curr_node, turn), 0) + 1
+            nbr_drones_turn = (self.zone_reservations.get((curr_node, turn), 0)
+                               + 1)
             # 1. Update Node Capacity Calendar
-            self.reservations[(curr_node, turn)] = nbr_drones_turn
+            self.zone_reservations[(curr_node, turn)] = nbr_drones_turn
             # 2. Update Edge Capacity Calendar (Only if moving)
             if turn > 0:
                 prev_zone = path[turn - 1]
@@ -82,9 +114,9 @@ class Navigator:
         unbroken chronological timeline.
 
         Args:
-            came_from (dict): A mapping of a state to its immediate
-            predecessor.
-                    Format: (curr_zone, curr_turn): (prev_zone, prev_turn)
+            came_from (dict): A mapping of a state to its parent Node/(zone).
+                Format: (curr_zone, curr_turn): (prev_zone, prev_turn)
+
             goal (tuple): The final 3D state reached by the algorithm.
                         Format: (goal_zone, arrival_turn)
 
@@ -109,11 +141,40 @@ class Navigator:
 
     def _space_time_a_star(self, drone: Drone) -> list[str]:
         """
-        Space time_a_star algorithm logic implementation
+        Executes a 3D Space-Time A* search to calculate the optimal,
+        collision-free chronological path for a single drone.
+
+        This algorithm extends standard A* by treating time as a
+        third physical dimension. It evaluates potential moves against
+        the global `reservations` and `edge_reservations` calendars to
+        guarantee node capacities and edge-swap rules are respected at every
+        discrete turn. It dynamically calculates temporal penalties
+        (+1 or +2 turns) based on the Map's ZoneTypes.
+
+        Local Variables:
+            open_set (list): A priority min-heap queue storing future states
+                    to explore. Sorted by F-score (Total estimated time).
+            came_from (dict): A ledger tracking the chronological sequence
+                    of states.
+                    Maps (Current Zone, Time) -> (Previous Zone, Time).
+            score (dict): A strict ledger recording the absolute fastest
+                    elapsed time to reach a specific (Zone, Time) state.
+                    Prevents infinite loops.
+
         Args:
-            Drone: drone object to implement the patfinder logic
-        Return:
-           list[str]: list[str]
+            drone (Drone): The specific drone object being routed.
+                    Provides the starting location for the search tree.
+
+        Returns:
+            list[str]: A turn-by-turn chronological schedule of the zones
+                    the drone will occupy. Returns an empty list [] if the
+                    drone is trapped in an unavoidable mathematical deadlock.
+
+        Raises:
+            AlgError: If the map lacks a defined end_hub,
+                or if a required edge vanishes.
+            MapError: If the algorithm attempts to evaluate
+                a node that does not exist.
         """
         if not self.map.end_hub:
             raise AlgError("No end hub on the map")
@@ -145,10 +206,10 @@ class Navigator:
                     arrival_time = current_time + 2
 
                 # IMPLEMENT: Check self.global_reservations for Node Capacity
-                nbr_drones = self.reservations.get((z_name, arrival_time),
-                                                   0)
-                fnbr_drones = self.reservations.get((z_name, current_time + 1),
-                                                    0)
+                nbr_drones = self.zone_reservations.get((z_name, arrival_time),
+                                                        0)
+                fnbr_drones = self.zone_reservations.get((z_name, current_time
+                                                          + 1), 0)
                 if (nbr_drones >= zone_to_go.max_drones or
                         fnbr_drones >= zone_to_go.max_drones):
                     continue
@@ -177,7 +238,26 @@ class Navigator:
         return []
 
     def _calculate_priorities(self) -> deque[Drone]:
-        """Phase 1: Returns a sorted list of drones based on Ideal Cost."""
+        """
+        Calculates the ideal routing priority queue for the swarm using a
+        longest-path-first heuristic. Executes a reverse Dijkstra search
+        (_get_ideal_cost) for every drone to determine its absolute minimum
+        traversal time to the end hub.
+
+        The drones are then sorted in descending order based on this cost.
+        Drones furthest from the goal are routed first to prevent closer
+        drones from creating unavoidable traffic deadlocks.
+        Ties are broken alphabetically by the drone's name.
+
+        Returns:
+            deque[Drone]: A double-ended queue containing only the Drone
+                objects, ordered from highest ideal cost to lowest ideal cost.
+
+        Raises:
+            MapError: If the map lacks a defined end_hub, or if a drone
+                is mathematically trapped in an isolated section of
+                the map (cost == -1).
+        """
         sorted_drones: list[tuple[int, Drone]] = []
         if not self.map.end_hub:
             raise MapError("The map those not have a end zone")
@@ -192,8 +272,27 @@ class Navigator:
 
     def _get_ideal_cost(self, current_zone: str, end_zone: str) -> int:
         """
-        params:
-        return:
+        Calculates the absolute minimum, traffic-free traversal time between
+        two zones using a Uniform-Cost Search (simplified Dijkstra's algorithm)
+
+        This method acts as the heuristic engine for the Space-Time
+        architecture. It evaluates the map's static terrain (applying +1
+        turn for NORMAL/PRIORITY zones and +2 turns for RESTRICTED zones,
+        while dodging BLOCKED zones) but entirely ignores dynamic traffic,
+        node capacities, and edge reservations.
+
+        Args:
+            current_zone (str): The name of the starting node for this search.
+                end_zone (str): The name of the target destination node.
+
+        Returns:
+            int: The lowest possible chronological turn count required to
+                reach the end_zone. Returns -1 if the end_zone is
+            mathematically unreachable (e.g., trapped by BLOCKED nodes).
+
+        Raises:
+            ValueError: If the algorithm encounters a neighboring zone name
+                that does not exist in the map's zone dictionary.
         """
         priority_queue: list = [(0, current_zone)]
         visited: set[str] = set()

@@ -19,6 +19,18 @@ class StateEngine:
         self.future_reservations: dict[tuple[str, int], int] = {}
         self.turn_counter: int = 0
 
+    # =========================================================
+    # PHASE 1: THE DEPARTURE (Freeing Capacity)
+    # ========================================================
+    def free_nodes_capacity(self) -> None:
+        pass
+
+    # =========================================================
+    # PHASE 2: THE VALIDATION (Enforcing Physics)
+    # =========================================================
+    def validate_move(self) -> None:
+        pass
+
     def execute_turn(self, moves: dict[str, str]) -> None:
         """
         proposed_moves:
@@ -109,20 +121,20 @@ at turn {turn}")
         # =========================================================
         for drone, destination, state in valid_moves:
             if state == DroneState.ARRIVED:
+                turn_output.append(f"{drone.name}: {drone.current_zone}\
+-{destination}")
                 drone.current_zone = destination
                 drone.destination = None
                 drone.transit_timer = 0
                 drone.state = DroneState.ARRIVED
-                turn_output.append(f"{drone.name}: {drone.current_zone}\
-{current_connection }-{destination}")
 
             if state == DroneState.IN_TRANSIT:
+                turn_output.append(f"{drone.name}: {drone.current_zone}\
+-{destination}")
                 drone.transit_timer = 1
                 drone.state = DroneState.IN_TRANSIT
                 drone.current_zone = None
                 drone.destination = destination
-                turn_output.append(f"{drone.name}: {drone.current_zone}\
-{connection}-{destination}")
 
         if turn_output:
             print("\n".join(turn_output))
