@@ -7,7 +7,7 @@ from .constants import DroneState, ZoneType, Coolors
 class Drone:
     name: str
     current_zone: str
-    path: list[str] = []
+    path: list[str]
     state: DroneState = field(default=DroneState.WAITING)
     transit_timer: int = field(default=0)
     destination: Optional[str] = field(default=None)

@@ -206,8 +206,8 @@ class Navigator:
 
                 nbr_drones = self.zone_reservations.get((z_name, arrival_time),
                                                         0)
-                fnbr_drones = self.zone_reservations.get((z_name, current_time
-                                                          + 1), 0)
+                fnbr_drones = self.zone_reservations.get((current_zone,
+                                                          current_time + 1), 0)
                 if (nbr_drones >= zone_to_go.max_drones or
                         fnbr_drones >= zone_to_go.max_drones):
                     continue

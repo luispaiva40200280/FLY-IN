@@ -99,7 +99,8 @@ class ParserMap:
             new_drone = Drone(
                 name=f"D{i}",
                 current_zone=self.map.start_hub or "start",
-                state=DroneState.WAITING
+                state=DroneState.WAITING,
+                path=[]
             )
             self.map.drones.append(new_drone)
 
