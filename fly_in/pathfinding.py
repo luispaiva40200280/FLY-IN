@@ -27,7 +27,7 @@ class Navigator:
             map (Map): Stores the static topological data of the
                 network to be navigated.
 
-            reservations (dict[tuple[str, int], int]):
+            zone_reservations (dict[tuple[str, int], int]):
                 The 3D Node Capacity Calendar.
                 Key: A tuple of (Zone Name, Chronological Turn).
                 Value: The integer count of drones scheduled to occupy
@@ -66,10 +66,10 @@ class Navigator:
         priority_queue = self._calculate_priorities()
 
         for drone in priority_queue:
-            path = self._space_time_a_star(drone)
-            if not path:
+            drone.path = self._space_time_a_star(drone)
+            if not drone.path:
                 raise AlgError(f"Deadlock: No valid path for {drone.name}")
-            self._register_path(drone, path)
+            self._register_path(drone, drone.path)
         return self.master_schedule
 
     def _register_path(self, drone: Drone, path: list[str]) -> None:
@@ -195,7 +195,6 @@ class Navigator:
                 zone_to_go = self.map.zones.get(z_name)
                 if not zone_to_go:
                     raise MapError(f"{z_name} does not exsit in  the map")
-                # IMPLEMENT: Calculate arrival_time (+1 or +2)
                 if zone_to_go.zone == ZoneType.BLOCKED:
                     continue
                 elif z_name == current_zone:
@@ -205,7 +204,6 @@ class Navigator:
                 else:
                     arrival_time = current_time + 2
 
-                # IMPLEMENT: Check self.global_reservations for Node Capacity
                 nbr_drones = self.zone_reservations.get((z_name, arrival_time),
                                                         0)
                 fnbr_drones = self.zone_reservations.get((z_name, current_time
@@ -213,7 +211,6 @@ class Navigator:
                 if (nbr_drones >= zone_to_go.max_drones or
                         fnbr_drones >= zone_to_go.max_drones):
                     continue
-                # IMPLEMENT: Check self.global_reservations for Edge Swaps
                 if current_zone != z_name:
                     edge = frozenset([current_zone, z_name])
                     conn_to_use = self.map.connections.get(edge)
@@ -223,7 +220,6 @@ class Navigator:
                                                            + 1), 0)
                     if edge_nbr >= conn_to_use.max_link_capacity:
                         continue
-                # IMPLEMENT: Calculate f_score using _get_ideal_cost
                 hcost = self._get_ideal_cost(z_name, self.map.end_hub)
                 if hcost == -1:
                     continue
