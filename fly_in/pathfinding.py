@@ -1,9 +1,7 @@
-from models.parser_map import MapError
-from models.network import Map
-from models.data import Drone
-from models.constants import ZoneType
 from collections import deque
 import heapq
+from models import Drone, ZoneType
+from models.parser_map import MapError, Map
 
 
 class AlgError(Exception):
@@ -184,6 +182,9 @@ class Navigator:
         score: dict[tuple[str, int], int] = {(drone.current_zone, 0): 0}
         while open_set:
             _, current_time, current_zone = heapq.heappop(open_set)
+            curr_zone_obj = self.map.zones.get(current_zone)
+            if not curr_zone_obj:
+                raise MapError(f"{current_zone} is not in the map")
             if current_zone == self.map.end_hub:
                 return self._reconstruct_path(came_from, (current_zone,
                                                           current_time))
@@ -209,7 +210,7 @@ class Navigator:
                 fnbr_drones = self.zone_reservations.get((current_zone,
                                                           current_time + 1), 0)
                 if (nbr_drones >= zone_to_go.max_drones or
-                        fnbr_drones >= zone_to_go.max_drones):
+                        fnbr_drones >= curr_zone_obj.max_drones):
                     continue
                 if current_zone != z_name:
                     edge = frozenset([current_zone, z_name])

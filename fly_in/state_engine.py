@@ -76,7 +76,7 @@ class StateEngine:
                 if future_count + 1 > zone_to_go.max_drones:
                     raise SimulationError(f"Colicion on {zone_to_go.name} \
 at turn {turn}")
-                self.future_reservations[target, turn] = future_count
+                self.future_reservations[target, turn] = future_count + 1
                 valid_moves.append((drone, target, DroneState.IN_TRANSIT))
             else:
                 if nodes_occupency[target] + 1 > zone_to_go.max_drones:
