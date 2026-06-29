@@ -1,0 +1,77 @@
+_This project has been created as part of the 42 curriculum by lpaiva_
+
+## Description
+
+> Design an efficient drone routing system that navigates multiple drones through connected zones while minimizing simulation turns and handling movement constraints
+
+The objective for this project is to implement a __Multi-Agent Path Finding (MAPF)__ so it can solve a single map in the shorts amount of Turns as possible. Each map is construct with a group of zones (having two specific zones to be the end and the start of the map), a fixed number of drones, and every two zones are connected with a connection that has specific rules such as the max number of drones that can be on it in the same time.
+
+**NETWORK (MAP) TYPOLOGY:** 
+- Zones : Zone Type (cost of the travel in number of turns), Max Drones in simultaneous
+- Connections: Max Drones that can travel in simultaneous
+- Start Zone: Inicial zone of the map 
+- End Zone: Last zone of the map
+- Drone: Object that needs to travel between the first zone and the last respecting the map roles
+#### Multi-Agent Path Finding (MAPF)
+- Multi-Agent Path Finding (MAPF) is the computational problem of finding collision-free paths for multiple agents—such as robots, vehicles, or drones—from their respective starting locations to their target destinations within a shared environment. In the context of the **Fly-in** simulation, MAPF is implemented to route a swarm of autonomous drones through a complex graph of zones and connections. Because certain zones have strict capacity limits (bottlenecks) or require varying transit times (restricted airspace), standard path-finding algorithms like basic __A* or Dijkstra's__ are insufficient.
+
+#### Algorithms choices:
+- **[[SPACE TIME A STAR (A* ALGORITHM)|SPACE TIME A STAR (A* ALGORITHM)]]**: Standard A* searches across an X/Y geometric grid. Space-Time A* adds **Time** as the crucial third dimension. Because drones are dynamic moving obstacles, a node might be blocked at Turn 2, but completely open at Turn 3.
+- **[[Dijkstra Algorithm|Dijkstra Algorithm]]**: It specifically implemented as a Uniform-Cost Search via `_get_ideal_cost`) does **not** calculate the final, collision-free paths. Instead, it serves as the static baseline calculator. It assumes the drone is the only object on the map and evaluates the raw topological physics of the network.
+####  Visual representation:
+The project as a complete terminal ui based representation of each turn and move that the drones do until arriving the _end zone_.
+
+**Exemple: (last 3 turns for the challenger/01_the_impossible_dream.txt )**
+```shell
+=== Turn number: 41 ===
+D7-impossible_goal
+D8-final_torture5
+D9-final_torture4
+
+=== Turn number: 42 ===
+D8-impossible_goal
+D9-final_torture5
+
+=== Turn number: 43 ===
+D9-impossible_goal
+```
+
+> Each zone is printed in the terminal with the given color of it in map file with the help of ASCII Codes,  if the color isn't given it defaults to a green color.     
+## Instructions
+- To run this Application we use the make file to run `commands` necessary to run the scrips in the terminal
+ 
+ **Makefile Rules:**
+- To install the dependencies, run:
+
+```shell
+make install
+```
+
+- To run the simulation with a specific map, use the following command:
+
+```shell
+make run MAP=<map>
+```
+
+**Development Commands:**
+- **`make debug`**: Runs the program with Python's debugger (`pdb`).
+- **`make lint`**: Checks the codes' compliance with the rules of `flake8` and `mypy`.
+- **`make lint-strict`** Checks the codes' compliance with the rules of `flake8` and `mypy` with the `--strict` flag.
+- **`make clean`**: Removes caches and temporary files.
+  
+## Resources
+
+### Web graphic:
+* **Dijkstra's algorithm**:
+	*  https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
+	* https://www.geeksforgeeks.org/dsa/dijkstras-shortest-path-algorithm-greedy-algo-7/
+	* https://www.youtube.com/watch?v=GazC3A4OQTE
+*  **SPACE TIME A STAR (A* ALGORITHM)**:
+	* https://www.geeksforgeeks.org/dsa/a-search-algorithm/
+	* https://en.wikipedia.org/wiki/A*_search_algorithm
+	* https://www.youtube.com/watch?v=ySN5Wnu88nE
+* **Regex**:
+	* https://regexr.com/
+### AI USAGE:
+
+   AI was use in this project too, filter information on the algorithms, explanation of the regex and how it works. Helping also in the structure of the project and helping on the improvement on the implementation of them, and on all the documentation done for this project such as (Docstrings, Readme and additional docs).  
